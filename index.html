@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rifa Oficial Free Fire</title>
+
+<style>
+body{
+    margin:0;
+    font-family:Arial, sans-serif;
+    background:#111;
+    color:white;
+}
+header{
+    background:#ff3c00;
+    padding:20px;
+    text-align:center;
+    font-size:22px;
+    font-weight:bold;
+    overflow:hidden;
+}
+.titulo-movimiento{
+    display:inline-block;
+    white-space:nowrap;
+    animation:moverLado 8s linear infinite;
+}
+@keyframes moverLado{
+    0%{
+        transform:translateX(-100%);
+    }
+    100%{
+        transform:translateX(100%);
+    }
+}
+.container{
+    max-width:900px;
+    margin:auto;
+    padding:20px;
+}
+.card{
+    background:#1b1b1b;
+    padding:20px;
+    margin-bottom:20px;
+    border-radius:10px;
+}
+input,button{
+    width:100%;
+    padding:12px;
+    margin-top:10px;
+    border-radius:6px;
+    border:none;
+    font-size:15px;
+}
+input{
+    background:#2a2a2a;
+    color:white;
+}
+button{
+    background:#ff3c00;
+    color:white;
+    font-weight:bold;
+    cursor:pointer;
+}
+button:hover{
+    background:#ff1e00;
+}
+.participant{
+    background:#222;
+    padding:10px;
+    margin-top:5px;
+    border-radius:5px;
+}
+#winner{
+    font-size:26px;
+    color:#00ff88;
+    text-align:center;
+    margin-top:20px;
+    font-weight:bold;
+}
+.hidden{
+    display:none;
+}
+.admin{
+    margin-top:40px;
+    border-top:1px solid #333;
+    padding-top:20px;
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="titulo-movimiento">
+    👑 SORTEO EXCLUSIVO • CUENTA FREE FIRE
+  </div>
+</header>
+
+<div class="container">
+
+<div class="card">
+<h2>📜 Método del Sorteo</h2>
+<p>
+El ganador será el número EXACTO correspondiente a los últimos dos números
+del primer premio de la Lotería Nacional RD.
+Si supera el total de participantes, se reducirá automáticamente.
+</p>
+</div>
+
+<div class="card" id="registroCard">
+<h2>📝 Registro</h2>
+
+<input type="text" id="nombre" placeholder="Nombre completo">
+<input type="text" id="whatsapp" placeholder="WhatsApp">
+<input type="text" id="freefire" placeholder="ID de Free Fire">
+
+<button onclick="registrar()">Participar</button>
+<p id="numeroAsignado"></p>
+
+</div>
+
+<div class="card">
+<h2>👥 Participantes (<span id="total">0</span>)</h2>
+<div id="lista"></div>
+</div>
+
+<div id="winner"></div>
+
+<div class="admin hidden" id="adminPanel">
+<h3>🔐 Panel Admin</h3>
+
+<input type="number" id="numeroOficial" placeholder="Últimos 2 números oficiales">
+<button onclick="publicarGanador()">Publicar Ganador</button>
+
+<button onclick="cerrarRegistros()">Cerrar Registros</button>
+
+</div>
+
+<div class="card">
+<h3>Acceso Admin</h3>
+<input type="password" id="adminPass" placeholder="Contraseña">
+<button onclick="abrirAdmin()">Entrar</button>
+</div>
+
+</div>
+
+<script type="module">
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, doc, setDoc, getDoc } 
+from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDWkaJMsaGwt6d0kzQwQdvfOhhutz0FXA4",
+  authDomain: "TU_AUTH_DOMAIN",
+  projectId: "TU_PROJECT_ID",
+  storageBucket: "TU_STORAGE_BUCKET",
+  messagingSenderId: "TU_MESSAGING_SENDER_ID",
+  appId: "TU_APP_ID"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+let participantes = [];
+let registrosCerrados = false;
+
+const adminPassword = "1234";
+
+window.abrirAdmin = function(){
+    let pass = document.getElementById("adminPass").value;
+    if(pass === adminPassword){
+        document.getElementById("adminPanel").classList.remove("hidden");
+        alert("Acceso concedido");
+    } else {
+        alert("Contraseña incorrecta");
+    }
+}
+
+window.registrar = async function(){
+
+    if(registrosCerrados){
+        alert("Registros cerrados");
+        return;
+    }
+
+    let nombre = document.getElementById("nombre").value;
+    let whatsapp = document.getElementById("whatsapp").value;
+    let freefire = document.getElementById("freefire").value;
+
+    if(!nombre || !whatsapp || !freefire){
+        alert("Completa todos los campos");
+        return;
+    }
+
+    let numero = participantes.length + 1;
+
+    await addDoc(collection(db,"participantes"),{
+        numero,
+        nombre,
+        whatsapp,
+        freefire,
+        fecha: new Date()
+    });
+
+    document.getElementById("numeroAsignado").innerText =
+    "🎟 Tu número es: #" + numero;
+
+    document.getElementById("nombre").value="";
+    document.getElementById("whatsapp").value="";
+    document.getElementById("freefire").value="";
+}
+
+const q = query(collection(db,"participantes"), orderBy("numero"));
+
+onSnapshot(q,(snapshot)=>{
+    participantes=[];
+    document.getElementById("lista").innerHTML="";
+    snapshot.forEach((doc)=>{
+        let data = doc.data();
+        participantes.push(data);
+        document.getElementById("lista").innerHTML +=
+        `<div class="participant">#${data.numero} - ${data.nombre}</div>`;
+    });
+    document.getElementById("total").innerText = participantes.length;
+});
+
+window.publicarGanador = async function(){
+
+    let numero = parseInt(document.getElementById("numeroOficial").value);
+    let total = participantes.length;
+
+    if(!numero || total === 0){
+        alert("Datos inválidos");
+        return;
+    }
+
+    while(numero > total){
+        numero -= total;
+    }
+
+    let ganador = participantes.find(p => p.numero === numero);
+
+    if(ganador){
+        await setDoc(doc(db,"config","ganador"),{
+            numero: ganador.numero,
+            nombre: ganador.nombre
+        });
+
+        document.getElementById("winner").innerText =
+        "🏆 GANADOR: #" + ganador.numero + " - " + ganador.nombre;
+    }
+}
+
+async function cargarGanador(){
+    const docRef = doc(db,"config","ganador");
+    const docSnap = await getDoc(docRef);
+    if(docSnap.exists()){
+        let data = docSnap.data();
+        document.getElementById("winner").innerText =
+        "🏆 GANADOR: #" + data.numero + " - " + data.nombre;
+    }
+}
+
+window.cerrarRegistros = async function(){
+    registrosCerrados = true;
+    document.getElementById("registroCard").classList.add("hidden");
+    alert("Registros cerrados");
+}
+
+cargarGanador();
+
+</script>
+
+</body>
+</html>
