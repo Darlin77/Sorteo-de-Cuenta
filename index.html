@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Rifa Oficial Free Fire</title>
+<title>Sorteo Exclusivo</title>
 
 <style>
 body{
@@ -26,12 +26,8 @@ header{
     animation:moverLado 8s linear infinite;
 }
 @keyframes moverLado{
-    0%{
-        transform:translateX(-100%);
-    }
-    100%{
-        transform:translateX(100%);
-    }
+    0%{ transform:translateX(-100%); }
+    100%{ transform:translateX(100%); }
 }
 .container{
     max-width:900px;
@@ -133,7 +129,6 @@ Si supera el total de participantes, se reducirá automáticamente.
 <button onclick="publicarGanador()">Publicar Ganador</button>
 
 <button onclick="cerrarRegistros()">Cerrar Registros</button>
-
 </div>
 
 <div class="card">
@@ -144,41 +139,28 @@ Si supera el total de participantes, se reducirá automáticamente.
 
 </div>
 
-<script type="module">
+<script>
 
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, doc, setDoc, getDoc } 
-from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-
-st firebaseConfig = {
-  apiKey: "AIzaSyDWkaJMsaGwt6d0kzQwQdvfOhhutz0FXA4",
-  authDomain: "sorteo-f8080.firebaseapp.com",
-  projectId: "sorteo-f8080",
-  storageBucket: "sorteo-f8080.firebasestorage.app",
-  messagingSenderId: "983209072208",
-  appId: "1:983209072208:web:ed7c83c8fd942f54092355",
-  measurementId: "G-LY5MSWKLKX"
-};
-
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-
-let participantes = [];
+let participantes = JSON.parse(localStorage.getItem("participantes")) || [];
+let ganadorGuardado = JSON.parse(localStorage.getItem("ganador")) || null;
 let registrosCerrados = false;
 
 const adminPassword = "1234";
 
-window.abrirAdmin = function(){
-    let pass = document.getElementById("adminPass").value;
-    if(pass === adminPassword){
-        document.getElementById("adminPanel").classList.remove("hidden");
-        alert("Acceso concedido");
-    } else {
-        alert("Contraseña incorrecta");
-    }
+function guardarDatos(){
+    localStorage.setItem("participantes", JSON.stringify(participantes));
 }
 
-window.registrar = async function(){
+function mostrarParticipantes(){
+    document.getElementById("lista").innerHTML="";
+    participantes.forEach(p=>{
+        document.getElementById("lista").innerHTML +=
+        `<div class="participant">#${p.numero} - ${p.nombre}</div>`;
+    });
+    document.getElementById("total").innerText = participantes.length;
+}
+
+function registrar(){
 
     if(registrosCerrados){
         alert("Registros cerrados");
@@ -196,13 +178,11 @@ window.registrar = async function(){
 
     let numero = participantes.length + 1;
 
-    await addDoc(collection(db,"participantes"),{
-        numero,
-        nombre,
-        whatsapp,
-        freefire,
-        fecha: new Date()
-    });
+    let nuevo = {numero,nombre,whatsapp,freefire};
+    participantes.push(nuevo);
+
+    guardarDatos();
+    mostrarParticipantes();
 
     document.getElementById("numeroAsignado").innerText =
     "🎟 Tu número es: #" + numero;
@@ -212,21 +192,17 @@ window.registrar = async function(){
     document.getElementById("freefire").value="";
 }
 
-const q = query(collection(db,"participantes"), orderBy("numero"));
+function abrirAdmin(){
+    let pass = document.getElementById("adminPass").value;
+    if(pass === adminPassword){
+        document.getElementById("adminPanel").classList.remove("hidden");
+        alert("Acceso concedido");
+    } else {
+        alert("Contraseña incorrecta");
+    }
+}
 
-onSnapshot(q,(snapshot)=>{
-    participantes=[];
-    document.getElementById("lista").innerHTML="";
-    snapshot.forEach((doc)=>{
-        let data = doc.data();
-        participantes.push(data);
-        document.getElementById("lista").innerHTML +=
-        `<div class="participant">#${data.numero} - ${data.nombre}</div>`;
-    });
-    document.getElementById("total").innerText = participantes.length;
-});
-
-window.publicarGanador = async function(){
+function publicarGanador(){
 
     let numero = parseInt(document.getElementById("numeroOficial").value);
     let total = participantes.length;
@@ -243,32 +219,27 @@ window.publicarGanador = async function(){
     let ganador = participantes.find(p => p.numero === numero);
 
     if(ganador){
-        await setDoc(doc(db,"config","ganador"),{
-            numero: ganador.numero,
-            nombre: ganador.nombre
-        });
-
         document.getElementById("winner").innerText =
         "🏆 GANADOR: #" + ganador.numero + " - " + ganador.nombre;
+
+        localStorage.setItem("ganador", JSON.stringify(ganador));
     }
 }
 
-async function cargarGanador(){
-    const docRef = doc(db,"config","ganador");
-    const docSnap = await getDoc(docRef);
-    if(docSnap.exists()){
-        let data = docSnap.data();
-        document.getElementById("winner").innerText =
-        "🏆 GANADOR: #" + data.numero + " - " + data.nombre;
-    }
-}
-
-window.cerrarRegistros = async function(){
+function cerrarRegistros(){
     registrosCerrados = true;
     document.getElementById("registroCard").classList.add("hidden");
     alert("Registros cerrados");
 }
 
+function cargarGanador(){
+    if(ganadorGuardado){
+        document.getElementById("winner").innerText =
+        "🏆 GANADOR: #" + ganadorGuardado.numero + " - " + ganadorGuardado.nombre;
+    }
+}
+
+mostrarParticipantes();
 cargarGanador();
 
 </script>
