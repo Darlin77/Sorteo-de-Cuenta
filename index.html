@@ -133,7 +133,7 @@ Si supera el total de participantes, se reducirá automáticamente.
 <hr>
 
 <h4>🗑 Borrar Participante</h4>
-<input type="text" id="nombreEliminar" placeholder="Nombre exacto del usuario">
+<input type="text" id="nombreEliminar" placeholder="Nombre, #número o #número-nombre">
 <button onclick="eliminarUsuario()">Eliminar Usuario</button>
 
 </div>
@@ -181,9 +181,9 @@ function registrar(){
         return;
     }
 
-    let nombre = document.getElementById("nombre").value;
-    let whatsapp = document.getElementById("whatsapp").value;
-    let freefire = document.getElementById("freefire").value;
+    let nombre = document.getElementById("nombre").value.trim();
+    let whatsapp = document.getElementById("whatsapp").value.trim();
+    let freefire = document.getElementById("freefire").value.trim();
 
     if(!nombre || !whatsapp || !freefire){
         alert("Completa todos los campos");
@@ -208,14 +208,24 @@ function registrar(){
 
 function eliminarUsuario(){
 
-    let nombreEliminar = document.getElementById("nombreEliminar").value;
+    let input = document.getElementById("nombreEliminar").value.trim().toLowerCase();
 
-    if(!nombreEliminar){
-        alert("Escribe el nombre exacto");
+    if(!input){
+        alert("Escribe el nombre o número");
         return;
     }
 
-    let index = participantes.findIndex(p => p.nombre === nombreEliminar);
+    let index = participantes.findIndex(p => {
+
+        let nombre = p.nombre.toLowerCase();
+        let numero = "#" + p.numero;
+
+        return (
+            nombre === input ||
+            numero === input ||
+            (numero + "-" + nombre) === input
+        );
+    });
 
     if(index === -1){
         alert("Usuario no encontrado");
