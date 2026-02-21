@@ -129,6 +129,13 @@ Si supera el total de participantes, se reducirá automáticamente.
 <button onclick="publicarGanador()">Publicar Ganador</button>
 
 <button onclick="cerrarRegistros()">Cerrar Registros</button>
+
+<hr>
+
+<h4>🗑 Borrar Participante</h4>
+<input type="text" id="nombreEliminar" placeholder="Nombre exacto del usuario">
+<button onclick="eliminarUsuario()">Eliminar Usuario</button>
+
 </div>
 
 <div class="card">
@@ -158,6 +165,13 @@ function mostrarParticipantes(){
         `<div class="participant">#${p.numero} - ${p.nombre}</div>`;
     });
     document.getElementById("total").innerText = participantes.length;
+}
+
+function reordenarNumeros(){
+    participantes.forEach((p,index)=>{
+        p.numero = index + 1;
+    });
+    guardarDatos();
 }
 
 function registrar(){
@@ -190,6 +204,32 @@ function registrar(){
     document.getElementById("nombre").value="";
     document.getElementById("whatsapp").value="";
     document.getElementById("freefire").value="";
+}
+
+function eliminarUsuario(){
+
+    let nombreEliminar = document.getElementById("nombreEliminar").value;
+
+    if(!nombreEliminar){
+        alert("Escribe el nombre exacto");
+        return;
+    }
+
+    let index = participantes.findIndex(p => p.nombre === nombreEliminar);
+
+    if(index === -1){
+        alert("Usuario no encontrado");
+        return;
+    }
+
+    participantes.splice(index,1);
+
+    reordenarNumeros();
+    mostrarParticipantes();
+
+    alert("Usuario eliminado correctamente");
+
+    document.getElementById("nombreEliminar").value="";
 }
 
 function abrirAdmin(){
