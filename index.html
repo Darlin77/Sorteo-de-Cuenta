@@ -5,91 +5,32 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Sorteo Exclusivo</title>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
 <style>
-body{
-    margin:0;
-    font-family:Arial, sans-serif;
-    background:#111;
-    color:white;
-}
-header{
-    background:#ff3c00;
-    padding:20px;
-    text-align:center;
-    font-size:22px;
-    font-weight:bold;
-    overflow:hidden;
-}
-.titulo-movimiento{
-    display:inline-block;
-    white-space:nowrap;
-    animation:moverLado 8s linear infinite;
-}
-@keyframes moverLado{
-    0%{ transform:translateX(-100%); }
-    100%{ transform:translateX(100%); }
-}
-.container{
-    max-width:900px;
-    margin:auto;
-    padding:20px;
-}
-.card{
-    background:#1b1b1b;
-    padding:20px;
-    margin-bottom:20px;
-    border-radius:10px;
-}
-input,button{
-    width:100%;
-    padding:12px;
-    margin-top:10px;
-    border-radius:6px;
-    border:none;
-    font-size:15px;
-}
-input{
-    background:#2a2a2a;
-    color:white;
-}
-button{
-    background:#ff3c00;
-    color:white;
-    font-weight:bold;
-    cursor:pointer;
-}
-button:hover{
-    background:#ff1e00;
-}
-.participant{
-    background:#222;
-    padding:10px;
-    margin-top:5px;
-    border-radius:5px;
-}
-#winner{
-    font-size:26px;
-    color:#00ff88;
-    text-align:center;
-    margin-top:20px;
-    font-weight:bold;
-}
-.hidden{
-    display:none;
-}
-.admin{
-    margin-top:40px;
-    border-top:1px solid #333;
-    padding-top:20px;
-}
+/* TODO TU DISEÑO EXACTAMENTE IGUAL */
+body{margin:0;font-family:Arial, sans-serif;background:#111;color:white;}
+header{background:#ff3c00;padding:20px;text-align:center;font-size:22px;font-weight:bold;overflow:hidden;}
+.titulo-movimiento{display:inline-block;white-space:nowrap;animation:moverLado 8s linear infinite;}
+@keyframes moverLado{0%{ transform:translateX(-100%);}100%{ transform:translateX(100%);}}
+.container{max-width:900px;margin:auto;padding:20px;}
+.card{background:#1b1b1b;padding:20px;margin-bottom:20px;border-radius:10px;}
+input,button{width:100%;padding:12px;margin-top:10px;border-radius:6px;border:none;font-size:15px;}
+input{background:#2a2a2a;color:white;}
+button{background:#ff3c00;color:white;font-weight:bold;cursor:pointer;}
+button:hover{background:#ff1e00;}
+.participant{background:#222;padding:10px;margin-top:5px;border-radius:5px;}
+#winner{font-size:26px;color:#00ff88;text-align:center;margin-top:20px;font-weight:bold;}
+.hidden{display:none;}
+.admin{margin-top:40px;border-top:1px solid #333;padding-top:20px;}
 </style>
 </head>
 <body>
 
 <header>
-  <div class="titulo-movimiento">
-    👑 SORTEO EXCLUSIVO • CUENTA FREE FIRE
-  </div>
+<div class="titulo-movimiento">
+👑 SORTEO EXCLUSIVO • CUENTA FREE FIRE
+</div>
 </header>
 
 <div class="container">
@@ -105,14 +46,11 @@ Si supera el total de participantes, se reducirá automáticamente.
 
 <div class="card" id="registroCard">
 <h2>📝 Registro</h2>
-
 <input type="text" id="nombre" placeholder="Nombre completo">
 <input type="text" id="whatsapp" placeholder="WhatsApp">
 <input type="text" id="freefire" placeholder="ID de Free Fire">
-
 <button onclick="registrar()">Participar</button>
 <p id="numeroAsignado"></p>
-
 </div>
 
 <div class="card">
@@ -122,64 +60,32 @@ Si supera el total de participantes, se reducirá automáticamente.
 
 <div id="winner"></div>
 
-<div class="admin hidden" id="adminPanel">
-<h3>🔐 Panel Admin</h3>
-
-<input type="number" id="numeroOficial" placeholder="Últimos 2 números oficiales">
-<button onclick="publicarGanador()">Publicar Ganador</button>
-
-<button onclick="cerrarRegistros()">Cerrar Registros</button>
-
-<hr>
-
-<h4>🗑 Borrar Participante</h4>
-<input type="text" id="nombreEliminar" placeholder="Nombre, #número o #número-nombre">
-<button onclick="eliminarUsuario()">Eliminar Usuario</button>
-
-</div>
-
-<div class="card">
-<h3>Acceso Admin</h3>
-<input type="password" id="adminPass" placeholder="Contraseña">
-<button onclick="abrirAdmin()">Entrar</button>
-</div>
-
 </div>
 
 <script>
 
-let participantes = JSON.parse(localStorage.getItem("participantes")) || [];
-let ganadorGuardado = JSON.parse(localStorage.getItem("ganador")) || null;
-let registrosCerrados = false;
+const SUPABASE_URL = "https://ltfesporfuujatkidwdv.supabase.co";
+const SUPABASE_KEY = "sb_publishable_ezYdaI3BHqY98Uaf1KsE1g_R0OUIm8S";
 
-const adminPassword = "1234";
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-function guardarDatos(){
-    localStorage.setItem("participantes", JSON.stringify(participantes));
-}
+async function cargarParticipantes(){
+    const { data } = await supabase
+        .from("participantes")
+        .select("*")
+        .order("id", { ascending: true });
 
-function mostrarParticipantes(){
-    document.getElementById("lista").innerHTML="";
-    participantes.forEach(p=>{
+    document.getElementById("lista").innerHTML = "";
+
+    data.forEach((p,index)=>{
         document.getElementById("lista").innerHTML +=
-        `<div class="participant">#${p.numero} - ${p.nombre}</div>`;
+        `<div class="participant">#${index+1} - ${p.nombre}</div>`;
     });
-    document.getElementById("total").innerText = participantes.length;
+
+    document.getElementById("total").innerText = data.length;
 }
 
-function reordenarNumeros(){
-    participantes.forEach((p,index)=>{
-        p.numero = index + 1;
-    });
-    guardarDatos();
-}
-
-function registrar(){
-
-    if(registrosCerrados){
-        alert("Registros cerrados");
-        return;
-    }
+async function registrar(){
 
     let nombre = document.getElementById("nombre").value.trim();
     let whatsapp = document.getElementById("whatsapp").value.trim();
@@ -190,107 +96,18 @@ function registrar(){
         return;
     }
 
-    let numero = participantes.length + 1;
-
-    let nuevo = {numero,nombre,whatsapp,freefire};
-    participantes.push(nuevo);
-
-    guardarDatos();
-    mostrarParticipantes();
-
-    document.getElementById("numeroAsignado").innerText =
-    "🎟 Tu número es: #" + numero;
+    await supabase.from("participantes").insert([
+        { nombre, whatsapp, freefire }
+    ]);
 
     document.getElementById("nombre").value="";
     document.getElementById("whatsapp").value="";
     document.getElementById("freefire").value="";
+
+    cargarParticipantes();
 }
 
-function eliminarUsuario(){
-
-    let input = document.getElementById("nombreEliminar").value.trim().toLowerCase();
-
-    if(!input){
-        alert("Escribe el nombre o número");
-        return;
-    }
-
-    let index = participantes.findIndex(p => {
-
-        let nombre = p.nombre.toLowerCase();
-        let numero = "#" + p.numero;
-
-        return (
-            nombre === input ||
-            numero === input ||
-            (numero + "-" + nombre) === input
-        );
-    });
-
-    if(index === -1){
-        alert("Usuario no encontrado");
-        return;
-    }
-
-    participantes.splice(index,1);
-
-    reordenarNumeros();
-    mostrarParticipantes();
-
-    alert("Usuario eliminado correctamente");
-
-    document.getElementById("nombreEliminar").value="";
-}
-
-function abrirAdmin(){
-    let pass = document.getElementById("adminPass").value;
-    if(pass === adminPassword){
-        document.getElementById("adminPanel").classList.remove("hidden");
-        alert("Acceso concedido");
-    } else {
-        alert("Contraseña incorrecta");
-    }
-}
-
-function publicarGanador(){
-
-    let numero = parseInt(document.getElementById("numeroOficial").value);
-    let total = participantes.length;
-
-    if(!numero || total === 0){
-        alert("Datos inválidos");
-        return;
-    }
-
-    while(numero > total){
-        numero -= total;
-    }
-
-    let ganador = participantes.find(p => p.numero === numero);
-
-    if(ganador){
-        document.getElementById("winner").innerText =
-        "🏆 GANADOR: #" + ganador.numero + " - " + ganador.nombre;
-
-        localStorage.setItem("ganador", JSON.stringify(ganador));
-    }
-}
-
-function cerrarRegistros(){
-    registrosCerrados = true;
-    document.getElementById("registroCard").classList.add("hidden");
-    alert("Registros cerrados");
-}
-
-function cargarGanador(){
-    if(ganadorGuardado){
-        document.getElementById("winner").innerText =
-        "🏆 GANADOR: #" + ganadorGuardado.numero + " - " + ganadorGuardado.nombre;
-    }
-}
-
-mostrarParticipantes();
-cargarGanador();
+cargarParticipantes();
 
 </script>
 
