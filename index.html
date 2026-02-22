@@ -149,8 +149,19 @@ Si supera el total de participantes, se reducirá automáticamente.
 <script type="module">
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, doc, setDoc, getDoc, deleteDoc } 
-from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { 
+  getFirestore, 
+  collection, 
+  addDoc, 
+  onSnapshot, 
+  query, 
+  orderBy, 
+  doc, 
+  setDoc, 
+  getDoc, 
+  deleteDoc,
+  getDocs 
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyC6K1g00cC61JVhPF1U9Otixak1whCYXcI",
@@ -238,26 +249,29 @@ window.eliminarPorNumero = async function(){
 
     let numero = parseInt(input.replace("#",""));
 
-    let usuario = participantes.find(p => p.numero === numero);
-
-    if(!usuario){
-        alert("Participante no encontrado");
+    if(!numero){
+        alert("Número inválido");
         return;
     }
 
-    const snapshot = await onSnapshot(q,()=>{});
-    const docs = await fetchDocs();
-
-}
-
-async function fetchDocs(){
     const snapshot = await getDocs(collection(db,"participantes"));
-    snapshot.forEach(async (docSnap)=>{
-        if(docSnap.data().numero === parseInt(document.getElementById("numeroEliminar").value.replace("#",""))){
+
+    let encontrado = false;
+
+    for(const docSnap of snapshot.docs){
+        if(docSnap.data().numero === numero){
             await deleteDoc(doc(db,"participantes",docSnap.id));
+            encontrado = true;
+            break;
         }
-    });
-    alert("Participante eliminado");
+    }
+
+    if(encontrado){
+        alert("Participante eliminado correctamente");
+    } else {
+        alert("Participante no encontrado");
+    }
+
     document.getElementById("numeroEliminar").value="";
 }
 
