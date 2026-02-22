@@ -130,12 +130,6 @@ Si supera el total de participantes, se reducirá automáticamente.
 
 <button onclick="cerrarRegistros()">Cerrar Registros</button>
 
-<hr>
-
-<h4>🗑 Borrar Participante</h4>
-<input type="text" id="nombreEliminar" placeholder="Nombre, #número o #número-nombre">
-<button onclick="eliminarUsuario()">Eliminar Usuario</button>
-
 </div>
 
 <div class="card">
@@ -146,35 +140,39 @@ Si supera el total de participantes, se reducirá automáticamente.
 
 </div>
 
-<script>
+<script type="module">
 
-let participantes = JSON.parse(localStorage.getItem("participantes")) || [];
-let ganadorGuardado = JSON.parse(localStorage.getItem("ganador")) || null;
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, doc, setDoc, getDoc } 
+from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyC6K1g00cC61JVhPF1U9Otixak1whCYXcI",
+  authDomain: "sorteo-freefire.firebaseapp.com",
+  projectId: "sorteo-freefire",
+  storageBucket: "sorteo-freefire.firebasestorage.app",
+  messagingSenderId: "297861511149",
+  appId: "1:297861511149:web:ed96946a8f47e01e2419e4"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+let participantes = [];
 let registrosCerrados = false;
-
 const adminPassword = "1234";
 
-function guardarDatos(){
-    localStorage.setItem("participantes", JSON.stringify(participantes));
+window.abrirAdmin = function(){
+    let pass = document.getElementById("adminPass").value;
+    if(pass === adminPassword){
+        document.getElementById("adminPanel").classList.remove("hidden");
+        alert("Acceso concedido");
+    } else {
+        alert("Contraseña incorrecta");
+    }
 }
 
-function mostrarParticipantes(){
-    document.getElementById("lista").innerHTML="";
-    participantes.forEach(p=>{
-        document.getElementById("lista").innerHTML +=
-        `<div class="participant">#${p.numero} - ${p.nombre}</div>`;
-    });
-    document.getElementById("total").innerText = participantes.length;
-}
-
-function reordenarNumeros(){
-    participantes.forEach((p,index)=>{
-        p.numero = index + 1;
-    });
-    guardarDatos();
-}
-
-function registrar(){
+window.registrar = async function(){
 
     if(registrosCerrados){
         alert("Registros cerrados");
@@ -192,11 +190,13 @@ function registrar(){
 
     let numero = participantes.length + 1;
 
-    let nuevo = {numero,nombre,whatsapp,freefire};
-    participantes.push(nuevo);
-
-    guardarDatos();
-    mostrarParticipantes();
+    await addDoc(collection(db,"participantes"),{
+        numero,
+        nombre,
+        whatsapp,
+        freefire,
+        fecha: new Date()
+    });
 
     document.getElementById("numeroAsignado").innerText =
     "🎟 Tu número es: #" + numero;
@@ -206,53 +206,21 @@ function registrar(){
     document.getElementById("freefire").value="";
 }
 
-function eliminarUsuario(){
+const q = query(collection(db,"participantes"), orderBy("numero"));
 
-    let input = document.getElementById("nombreEliminar").value.trim().toLowerCase();
-
-    if(!input){
-        alert("Escribe el nombre o número");
-        return;
-    }
-
-    let index = participantes.findIndex(p => {
-
-        let nombre = p.nombre.toLowerCase();
-        let numero = "#" + p.numero;
-
-        return (
-            nombre === input ||
-            numero === input ||
-            (numero + "-" + nombre) === input
-        );
+onSnapshot(q,(snapshot)=>{
+    participantes=[];
+    document.getElementById("lista").innerHTML="";
+    snapshot.forEach((docSnap)=>{
+        let data = docSnap.data();
+        participantes.push(data);
+        document.getElementById("lista").innerHTML +=
+        `<div class="participant">#${data.numero} - ${data.nombre}</div>`;
     });
+    document.getElementById("total").innerText = participantes.length;
+});
 
-    if(index === -1){
-        alert("Usuario no encontrado");
-        return;
-    }
-
-    participantes.splice(index,1);
-
-    reordenarNumeros();
-    mostrarParticipantes();
-
-    alert("Usuario eliminado correctamente");
-
-    document.getElementById("nombreEliminar").value="";
-}
-
-function abrirAdmin(){
-    let pass = document.getElementById("adminPass").value;
-    if(pass === adminPassword){
-        document.getElementById("adminPanel").classList.remove("hidden");
-        alert("Acceso concedido");
-    } else {
-        alert("Contraseña incorrecta");
-    }
-}
-
-function publicarGanador(){
+window.publicarGanador = async function(){
 
     let numero = parseInt(document.getElementById("numeroOficial").value);
     let total = participantes.length;
@@ -269,27 +237,32 @@ function publicarGanador(){
     let ganador = participantes.find(p => p.numero === numero);
 
     if(ganador){
+        await setDoc(doc(db,"config","ganador"),{
+            numero: ganador.numero,
+            nombre: ganador.nombre
+        });
+
         document.getElementById("winner").innerText =
         "🏆 GANADOR: #" + ganador.numero + " - " + ganador.nombre;
-
-        localStorage.setItem("ganador", JSON.stringify(ganador));
     }
 }
 
-function cerrarRegistros(){
+async function cargarGanador(){
+    const docRef = doc(db,"config","ganador");
+    const docSnap = await getDoc(docRef);
+    if(docSnap.exists()){
+        let data = docSnap.data();
+        document.getElementById("winner").innerText =
+        "🏆 GANADOR: #" + data.numero + " - " + data.nombre;
+    }
+}
+
+window.cerrarRegistros = function(){
     registrosCerrados = true;
     document.getElementById("registroCard").classList.add("hidden");
     alert("Registros cerrados");
 }
 
-function cargarGanador(){
-    if(ganadorGuardado){
-        document.getElementById("winner").innerText =
-        "🏆 GANADOR: #" + ganadorGuardado.numero + " - " + ganadorGuardado.nombre;
-    }
-}
-
-mostrarParticipantes();
 cargarGanador();
 
 </script>
